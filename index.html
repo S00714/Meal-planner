@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Tonights Kitchen</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAF8F4; --card: #FFFFFF; --border: #E8E2D9;
+    --aubergine: #3D2645; --sage: #6B8F71; --amber: #C9793A;
+    --text: #2A2118; --muted: #7A6E63;
+    --like-bg: #E8F2E9; --like-text: #3A6B41;
+    --dislike-bg: #FAE8E8; --dislike-text: #8B2E2E;
+    --allergy-bg: #FFF3E0; --allergy-text: #8B5500;
+    --star-on: #C9793A; --star-off: #D9D3CC;
+    --verified: #2E7D4F; --verified-bg: #E8F5ED;
+  }
+  body { background: var(--bg); font-family: Georgia, serif; color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+
+  /* Header */
+  .header { background: var(--aubergine); padding: 18px 16px 14px; position: sticky; top: 0; z-index: 100; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .header-eyebrow { color: #D4B8DE; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+  .header-title { color: #fff; font-size: 21px; font-weight: 700; }
+  .header-btns { display: flex; gap: 8px; }
+  .header-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 10px; padding: 7px 13px; color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .meal-tabs { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .meal-tab { background: rgba(255,255,255,0.12); border: none; border-radius: 20px; padding: 5px 13px; color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; text-transform: capitalize; }
+  .meal-tab.active { background: var(--amber); font-weight: 700; }
+
+  /* Layout */
+  .content { padding: 18px 16px 80px; }
+  .card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 16px; margin-bottom: 14px; }
+  .card-label { font-weight: 700; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+  /* Chips */
+  .chips { display: flex; flex-wrap: wrap; margin-bottom: 4px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 4px 10px; font-size: 13px; font-weight: 500; margin: 3px 3px 3px 0; }
+  .chip-like { background: var(--like-bg); color: var(--like-text); }
+  .chip-dislike { background: var(--dislike-bg); color: var(--dislike-text); }
+  .chip-allergy { background: var(--allergy-bg); color: var(--allergy-text); }
+  .chip-remove { background: none; border: none; cursor: pointer; font-size: 15px; line-height: 1; padding: 0; opacity: 0.7; font-family: inherit; }
+
+  /* Inputs */
+  .tag-input { display: flex; gap: 8px; margin-top: 8px; }
+  .tag-input input, .setup-input, .rating-note { font-family: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; outline: none; padding: 10px 14px; }
+  .tag-input input { flex: 1; }
+  .tag-input input:focus, .setup-input:focus, .rating-note:focus { border-color: var(--sage); }
+  .setup-input { width: 100%; border-radius: 12px; background: var(--card); margin-bottom: 12px; }
+  .rating-note { width: 100%; border-radius: 8px; background: var(--card); margin-top: 10px; }
+  .btn-add { background: var(--sage); color: #fff; border: none; border-radius: 10px; padding: 10px 16px; font-size: 15px; cursor: pointer; font-weight: 600; font-family: inherit; }
+
+  /* Number input */
+  .number-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .number-row span { font-size: 15px; }
+  .number-controls { display: flex; align-items: center; gap: 10px; }
+  .num-btn { background: var(--border); border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 18px; cursor: pointer; font-family: inherit; }
+  .num-val { font-weight: 700; font-size: 16px; min-width: 24px; text-align: center; }
+
+  /* Diet */
+  .diet-btns { display: flex; flex-wrap: wrap; }
+  .diet-btn { border-radius: 20px; padding: 6px 13px; margin: 3px 4px 3px 0; font-size: 14px; cursor: pointer; text-transform: capitalize; font-family: inherit; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); }
+  .diet-btn.active { background: var(--aubergine); color: #fff; border-color: var(--aubergine); }
+
+  /* Pills */
+  .pills { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+  .pill { border-radius: 20px; padding: 5px 12px; font-size: 13px; }
+  .pill-dark { background: var(--aubergine); color: #fff; }
+  .pill-light { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+  .pill-sage { background: var(--sage); color: #fff; text-transform: capitalize; }
+  .pill-allergy { background: var(--allergy-bg); color: var(--allergy-text); }
+
+  /* Buttons */
+  .btn-primary { width: 100%; padding: 18px 16px; background: var(--amber); color: #fff; border: none; border-radius: 16px; font-size: 18px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-outline { width: 100%; padding: 14px; background: transparent; border: 2px solid var(--aubergine); color: var(--aubergine); border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 8px; }
+  .btn-ghost { width: 100%; padding: 14px; background: transparent; border: 1.5px solid var(--border); color: var(--muted); border-radius: 14px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 10px; }
+  .btn-save { width: 100%; padding: 16px; background: var(--aubergine); color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-rate { width: 100%; padding: 12px; background: var(--aubergine); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-confirm { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit; background: var(--sage); color: #fff; }
+  .btn-confirm:disabled { background: var(--border); color: var(--muted); cursor: default; }
+  .btn-cancel { padding: 10px 14px; background: none; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; color: var(--muted); font-size: 14px; font-family: inherit; }
+
+  /* Tip / info boxes */
+  .tip-box { background: #FFF8F0; border: 1px solid #FFD9B0; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 14px; color: var(--amber); }
+  .text-muted { color: var(--muted); font-size: 15px; margin-bottom: 16px; line-height: 1.5; }
+
+  /* Meal card */
+  .meal-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); margin-bottom: 14px; overflow: hidden; }
+  .meal-card-header { width: 100%; background: none; border: none; cursor: pointer; padding: 16px 16px 12px; text-align: left; font-family: inherit; }
+  .meal-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .meal-emoji { font-size: 22px; margin-bottom: 4px; }
+  .meal-name { font-weight: 700; font-size: 17px; color: var(--text); margin-bottom: 4px; }
+  .meal-why { font-size: 13px; color: var(--muted); }
+  .meal-chevron { font-size: 18px; color: var(--muted); margin-left: 8px; margin-top: 4px; }
+  .meal-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .meal-pill { background: var(--bg); border-radius: 10px; padding: 4px 9px; font-size: 12px; color: var(--muted); }
+  .meal-card-body { padding: 0 16px 16px; border-top: 1px solid var(--border); display: none; }
+  .meal-card-body.open { display: block; }
+  .section-label { font-weight: 700; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; }
+  .meal-card-body ul, .meal-card-body ol { padding-left: 18px; margin: 6px 0 14px; }
+  .meal-card-body li { font-size: 14px; margin-bottom: 5px; line-height: 1.5; }
+  .recipe-tip { background: #F0F7F1; border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; font-size: 13px; color: var(--like-text); }
+
+  /* Nutrition */
+  .nutrition-box { background: var(--bg); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .nut-row { margin-bottom: 9px; }
+  .nut-label-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .nut-label { font-size: 12px; color: var(--muted); }
+  .nut-value { font-size: 12px; font-weight: 700; color: var(--text); }
+  .nut-track { background: var(--border); border-radius: 4px; height: 6px; }
+  .nut-fill { border-radius: 4px; height: 6px; }
+  .verified-badge { background: var(--verified-bg); border-radius: 8px; padding: 7px 10px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--verified); }
+  .nut-loading { background: var(--bg); border-radius: 10px; padding: 14px; text-align: center; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
+
+  /* Stars */
+  .stars { display: flex; gap: 4px; }
+  .star-btn { background: none; border: none; cursor: pointer; font-size: 24px; padding: 2px 1px; line-height: 1; font-family: inherit; }
+
+  /* Rating form */
+  .rating-form { background: var(--bg); border-radius: 12px; padding: 14px; }
+  .rating-form p { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .rating-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .logged-msg { text-align: center; padding: 10px 0; color: var(--sage); font-weight: 700; font-size: 15px; }
+
+  /* History */
+  .history-card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 14px; margin-bottom: 10px; }
+  .history-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .history-name { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
+  .history-meta { font-size: 12px; color: var(--muted); }
+  .history-remove { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0; font-family: inherit; }
+  .history-stars { display: flex; gap: 2px; margin-top: 8px; font-size: 18px; }
+  .history-note { margin-top: 6px; font-size: 13px; color: var(--muted); font-style: italic; }
+  .recent-meal { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
+  .recent-stars { color: var(--star-on); font-size: 15px; }
+
+  /* Loading / error */
+  .loading-state { text-align: center; padding: 40px; }
+  .loading-emoji { font-size: 40px; margin-bottom: 12px; }
+  .loading-text { color: var(--muted); font-size: 16px; }
+  .error-box { background: var(--dislike-bg); border-radius: 12px; padding: 14px; color: var(--dislike-text); margin-bottom: 14px; }
+
+  /* Setup screen */
+  .setup-screen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 30px 20px; background: var(--bg); }
+  .setup-logo { font-size: 48px; text-align: center; margin-bottom: 16px; }
+  .setup-title { font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--aubergine); }
+  .setup-sub { font-size: 15px; color: var(--muted); text-align: center; margin-bottom: 28px; line-height: 1.6; }
+  .setup-steps { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 18px; margin-bottom: 20px; }
+  .setup-step { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+  .setup-step:last-child { margin-bottom: 0; }
+  .setup-num { background: var(--aubergine); color: #fff; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .setup-step-text { font-size: 14px; line-height: 1.5; color: var(--text); }
+  .setup-step-text a { color: var(--amber); }
+  .setup-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+// ── State ────────────────────────────────────────────────────────────
+const PREFS_KEY = 'tk-prefs-v1';
+const HISTORY_KEY = 'tk-history-v1';
+const API_KEY_KEY = 'tk-apikey-v1';
+
+let state = {
+  screen: 'home',
+  mealType: 'dinner',
+  prefs: { likes: [], dislikes: [], allergies: [], adults: 2, children: 2, cookTime: 30, diet: 'none' },
+  history: [],
+  suggestions: [],
+  loading: false,
+  error: '',
+  apiKey: '',
+  cards: {}
+};
+
+function loadState() {
+  try { const p = localStorage.getItem(PREFS_KEY); if (p) state.prefs = { ...state.prefs, ...JSON.parse(p) }; } catch(_) {}
+  try { const h = localStorage.getItem(HISTORY_KEY); if (h) state.history = JSON.parse(h); } catch(_) {}
+  try { const k = localStorage.getItem(API_KEY_KEY); if (k) state.apiKey = k; } catch(_) {}
+  state.screen = state.apiKey ? 'home' : 'setup';
+}
+
+function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(state.prefs)); }
+function saveHistory() { localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history)); }
+function saveApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
+
+// ── Nutrition ────────────────────────────────────────────────────────
+function parseGrams(str) {
+  const s = str.toLowerCase();
+  let m;
+  if ((m = s.match(/(\d+\.?\d*)\s*kg/))) return parseFloat(m[1]) * 1000;
+  if ((m = s.match(/(\d+\.?\d*)\s*g(?:rams?)?/))) return parseFloat(m[1]);
+  if ((m = s.match(/(\d+\.?\d*)\s*ml/))) return parseFloat(m[1]);
+  if ((m = s.match(/(\d+\.?\d*)\s*litre?s?/))) return parseFloat(m[1]) * 1000;
+  if ((m = s.match(/(\d+\.?\d*)\s*tbsp/))) return parseFloat(m[1]) * 15;
+  if ((m = s.match(/(\d+\.?\d*)\s*tsp/))) return parseFloat(m[1]) * 5;
+  if ((m = s.match(/(\d+\.?\d*)\s*dessertspoon/))) return parseFloat(m[1]) * 10;
+  return null;
+}
+
+function extractName(str) {
+  return str.replace(/^\d+\.?\d*\s*(kg|g|ml|litres?|tbsp|tsp|dessertspoon|x|large|medium|small|tin|can|bunch|handful|pinch|cloves?|slices?|rashers?)\s*/i,'').replace(/,.*$/,'').trim();
+}
+
+async function lookupIngredient(name) {
+  try {
+    const q = encodeURIComponent(name.toLowerCase().trim());
+    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${q}&search_simple=1&action=process&json=1&page_size=1&fields=nutriments,product_name`);
+    const data = await res.json();
+    const n = data?.products?.[0]?.nutriments;
+    if (!n) return null;
+    return {
+      kcal: n['energy-kcal_100g'] || (n['energy_100g'] ? Math.round(n['energy_100g'] / 4.184) : null),
+      protein: n['proteins_100g'] || null, carbs: n['carbohydrates_100g'] || null,
+      fat: n['fat_100g'] || null, fibre: n['fiber_100g'] || n['fibre_100g'] || null, salt: n['salt_100g'] || null
+    };
+  } catch { return null; }
+}
+
+async function fetchNutrition(ingredients, servings) {
+  let t = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, salt: 0 };
+  let verified = 0;
+  for (const ing of ingredients) {
+    const grams = parseGrams(ing);
+    const name = extractName(ing);
+    if (!name || name.length < 3) continue;
+    const d = await lookupIngredient(name);
+    if (!d) continue;
+    const f = grams ? grams / 100 : 1;
+    if (d.kcal) { t.kcal += d.kcal * f; verified++; }
+    if (d.protein) t.protein += d.protein * f;
+    if (d.carbs) t.carbs += d.carbs * f;
+    if (d.fat) t.fat += d.fat * f;
+    if (d.fibre) t.fibre += d.fibre * f;
+    if (d.salt) t.salt += d.salt * f;
+  }
+  const s = servings || 2;
+  return { kcal: Math.round(t.kcal/s), protein:(t.protein/s).toFixed(1), carbs:(t.carbs/s).toFixed(1), fat:(t.fat/s).toFixed(1), fibre:(t.fibre/s).toFixed(1), salt:(t.salt/s).toFixed(2), verifiedCount: verified, totalIngredients: ingredients.length };
+}
+
+// ── AI ───────────────────────────────────────────────────────────────
+function historyContext() {
+  if (!state.history.length) return '';
+  const loved = state.history.filter(h=>h.rating>=4).map(h=>h.name).slice(0,8).join(', ');
+  const bad = state.history.filter(h=>h.rating<=2).map(h=>h.name).slice(0,8).join(', ');
+  const recent = state.history.slice(0,5).map(h=>h.name).join(', ');
+  return `\nPast ratings — loved (4-5 stars): ${loved||'none'}. Didn't work (1-2 stars): ${bad||'none'}. Recently cooked (avoid repeating): ${recent||'none'}.`;
+}
+
+async function getSuggestions() {
+  state.loading = true; state.error = ''; state.suggestions = []; state.cards = {};
+  state.screen = 'suggestions';
+  render();
+  const p = state.prefs;
+  const total = p.adults + p.children;
+  const prompt = `You are a practical UK family meal planner. Generate exactly 3 ${state.mealType} suggestions.
+Family: ${p.adults} adults, ${p.children} children. Diet: ${p.diet}. Max cook time: ${p.cookTime} minutes.
+Loves: ${p.likes.join(', ')||'not specified'}. Avoids: ${p.dislikes.join(', ')||'none'}. Allergies: ${p.allergies.join(', ')||'none'}.${historyContext()}
+IMPORTANT: UK measurements only — grams (g), millilitres (ml), tablespoons (tbsp), teaspoons (tsp), litres. Never cups or ounces. Always include specific weights/volumes per ingredient.
+Return ONLY a raw JSON array of 3 objects. No markdown, no preamble.
+Each: {"name":"","emoji":"","why":"","cookTime":"","servings":${total},"ingredients":["400g chicken breast, diced"],"steps":["Step 1"],"tip":""}`;
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = data.choices?.[0]?.message?.content || '';
+    state.suggestions = JSON.parse(text.replace(/```json|```/g,'').trim());
+  } catch(e) {
+    state.error = 'Could not load suggestions. Check your API key in preferences, then try again. (' + e.message + ')';
+  }
+  state.loading = false;
+  render();
+}
+
+// ── Card state ───────────────────────────────────────────────────────
+function getCard(i) {
+  if (!state.cards[i]) state.cards[i] = { open:false, nutLoading:false, nutrition:null, logging:false, rating:0, note:'', logged:false };
+  return state.cards[i];
+}
+
+async function toggleCard(i) {
+  const c = getCard(i);
+  c.open = !c.open;
+  render();
+  if (c.open && !c.nutrition && !c.nutLoading) {
+    c.nutLoading = true; render();
+    c.nutrition = await fetchNutrition(state.suggestions[i].ingredients || [], state.prefs.adults + state.prefs.children);
+    c.nutLoading = false; render();
+  }
+}
+function setCardRating(i, r) { getCard(i).rating = r; render(); }
+function startLogging(i) { getCard(i).logging = true; render(); }
+function cancelLogging(i) { getCard(i).logging = false; render(); }
+function submitRating(i) {
+  const c = getCard(i);
+  if (!c.rating) return;
+  const meal = state.suggestions[i];
+  state.history = [{ id:Date.now(), name:meal.name, emoji:meal.emoji, mealType:state.mealType, rating:c.rating, note:c.note, date:new Date().toLocaleDateString('en-GB') }, ...state.history].slice(0,50);
+  saveHistory();
+  c.logged = true; c.logging = false;
+  render();
+}
+
+// ── Render helpers ────────────────────────────────────────────────────
+function nutBar(label, value, unit, color, max) {
+  const pct = Math.min(100, Math.round((parseFloat(value)/max)*100));
+  return `<div class="nut-row"><div class="nut-label-row"><span class="nut-label">${label}</span><span class="nut-value">${value}${unit}</span></div><div class="nut-track"><div class="nut-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+}
+
+function renderStars(rating, interactive, cardIdx) {
+  return [1,2,3,4,5].map(n => {
+    const col = n <= rating ? 'var(--star-on)' : 'var(--star-off)';
+    const oc = interactive ? `onclick="setCardRating(${cardIdx},${n})"` : 'disabled';
+    return `<button class="star-btn" style="color:${col}" ${oc}>&#9733;</button>`;
+  }).join('');
+}
+
+function numRow(label, val, decFn, incFn) {
+  return `<div class="number-row"><span>${label}</span><div class="number-controls"><button class="num-btn" onclick="${decFn}">&#8722;</button><span class="num-val">${val}</span><button class="num-btn" onclick="${incFn}">+</button></div></div>`;
+}
+
+function chip(label, listKey) {
+  const cls = listKey === 'likes' ? 'like' : listKey === 'dislikes' ? 'dislike' : 'allergy';
+  const safe = label.replace(/'/g,"\\'");
+  return `<span class="chip chip-${cls}">${label}<button class="chip-remove" onclick="removeTag('${listKey}','${safe}')">&#215;</button></span>`;
+}
+
+function renderMealCard(meal, i) {
+  const c = getCard(i);
+  let nutHTML = '';
+  if (c.nutLoading) {
+    nutHTML = `<div class="nut-loading">&#128269; Looking up ingredients via Open Food Facts&hellip;</div>`;
+  } else if (c.nutrition) {
+    const n = c.nutrition;
+    nutHTML = `<div class="nutrition-box">${nutBar('Calories',n.kcal,' kcal','var(--amber)',800)}${nutBar('Protein',n.protein,'g','var(--sage)',60)}${nutBar('Carbohydrates',n.carbs,'g','#7B9EC2',100)}${nutBar('Fat',n.fat,'g','#B8856A',50)}${nutBar('Fibre',n.fibre,'g','#9B7EC8',15)}${nutBar('Salt',n.salt,'g','#C2887B',3)}</div><div class="verified-badge">&#10003; ${n.verifiedCount} of ${n.totalIngredients} ingredients verified via Open Food Facts</div>`;
+  }
+  let rateHTML = c.logged
+    ? `<div class="logged-msg">&#10003; Saved to your history</div>`
+    : c.logging
+      ? `<div class="rating-form"><p>How did it go?</p><div class="stars">${renderStars(c.rating,true,i)}</div><input class="rating-note" placeholder="Any notes? (optional)" oninput="state.cards[${i}].note=this.value" value="${(c.note||'').replace(/"/g,'&quot;')}"><div class="rating-btns"><button class="btn-confirm" onclick="submitRating(${i})" ${c.rating?'':'disabled'}>Save rating</button><button class="btn-cancel" onclick="cancelLogging(${i})">Cancel</button></div></div>`
+      : `<button class="btn-rate" onclick="startLogging(${i})">&#9733; We made this &mdash; rate it</button>`;
+  const ings = (meal.ingredients||[]).map(x=>`<li>${x}</li>`).join('');
+  const steps = (meal.steps||[]).map(x=>`<li>${x}</li>`).join('');
+  const servings = state.prefs.adults + state.prefs.children;
+  return `<div class="meal-card"><button class="meal-card-header" onclick="toggleCard(${i})"><div class="meal-card-top"><div style="flex:1"><div class="meal-emoji">${meal.emoji}</div><div class="meal-name">${meal.name}</div><div class="meal-why">${meal.why}</div></div><div class="meal-chevron">${c.open?'&#9650;':'&#9660;'}</div></div><div class="meal-pills"><span class="meal-pill">&#9201; ${meal.cookTime}</span><span class="meal-pill">${servings} people</span></div></button><div class="meal-card-body ${c.open?'open':''}"><p class="section-label">Nutrition per serving</p>${nutHTML}<p class="section-label">Ingredients</p><ul>${ings}</ul><p class="section-label">Method</p><ol>${steps}</ol><div class="recipe-tip">&#128161; <strong>Tip:</strong> ${meal.tip}</div>${rateHTML}</div></div>`;
+}
+
+// ── Main render ───────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  const p = state.prefs;
+
+  if (state.screen === 'setup') {
+    app.innerHTML = `<div class="setup-screen"><div class="setup-logo">&#127859;</div><h1 class="setup-title">Tonight's Kitchen</h1><p class="setup-sub">A family meal planner that learns your likes, verifies nutrition from Open Food Facts, and gets smarter the more you use it.</p><div class="setup-steps"><div class="setup-step"><div class="setup-num">1</div><div class="setup-step-text">Go to <a href="https://console.groq.com" target="_blank">console.groq.com</a> and create a free account (no payment needed).</div></div><div class="setup-step"><div class="setup-num">2</div><div class="setup-step-text">Go to <strong>API Keys</strong>, create a new key, and copy it.</div></div><div class="setup-step"><div class="setup-num">3</div><div class="setup-step-text">Paste it below. It stays on this device only &mdash; never shared.</div></div></div><input class="setup-input" type="password" id="apiKeyInput" placeholder="Paste your Groq API key here&hellip;"><button class="btn-primary" onclick="handleApiKeySave()">Get started &rarr;</button><p class="setup-note">Your key is stored in your browser&rsquo;s local storage only.<br>It is sent directly to Groq&rsquo;s API and nowhere else.</p></div>`;
+    return;
+  }
+
+  const showTabs = !['preferences','history'].includes(state.screen);
+  const tabs = showTabs ? `<div class="meal-tabs">${['breakfast','lunch','dinner','snack'].map(t=>`<button class="meal-tab ${state.mealType===t?'active':''}" onclick="setMealType('${t}')">${t}</button>`).join('')}</div>` : '';
+  const histBtn = state.screen==='history' ? `<button class="header-btn" onclick="setScreen('home')">&larr; Back</button>` : `<button class="header-btn" onclick="setScreen('history')">&#128203;${state.history.length>0?' '+state.history.length:''}</button>`;
+  const prefBtn = state.screen==='preferences' ? `<button class="header-btn" onclick="setScreen('home')">&larr; Back</button>` : `<button class="header-btn" onclick="setScreen('preferences')">&#9881;</button>`;
+
+  let screenHTML = '';
+
+  if (state.screen === 'preferences') {
+    const dietOpts = ['none','vegetarian','vegan','pescatarian','gluten-free','dairy-free'];
+    screenHTML = `
+      <div class="card"><div class="card-label">Household</div>
+        ${numRow('Adults', p.adults, "adjustNum('adults',-1)", "adjustNum('adults',1)")}
+        ${numRow('Children', p.children, "adjustNum('children',-1)", "adjustNum('children',1)")}
+        ${numRow('Max cook time (mins)', p.cookTime, "adjustNum('cookTime',-5)", "adjustNum('cookTime',5)")}
+      </div>
+      <div class="card"><div class="card-label">Diet</div><div class="diet-btns">
+        ${dietOpts.map(d=>`<button class="diet-btn ${p.diet===d?'active':''}" onclick="setDiet('${d}')">${d==='none'?'No restriction':d}</button>`).join('')}
+      </div></div>
+      <div class="card"><div class="card-label">Foods we love &#128154;</div>
+        <div class="chips">${p.likes.map(l=>chip(l,'likes')).join('')}</div>
+        <div class="tag-input"><input type="text" id="likes-input" placeholder="e.g. pasta, chicken, roasted veg" onkeydown="if(event.key==='Enter')addTag('likes')"><button class="btn-add" onclick="addTag('likes')">Add</button></div>
+      </div>
+      <div class="card"><div class="card-label">Foods we avoid &#128683;</div>
+        <div class="chips">${p.dislikes.map(d=>chip(d,'dislikes')).join('')}</div>
+        <div class="tag-input"><input type="text" id="dislikes-input" placeholder="e.g. mushrooms, olives, spicy food" onkeydown="if(event.key==='Enter')addTag('dislikes')"><button class="btn-add" onclick="addTag('dislikes')">Add</button></div>
+      </div>
+      <div class="card"><div class="card-label">Allergies &amp; intolerances &#9888;&#65039;</div>
+        <div class="chips">${p.allergies.map(a=>chip(a,'allergies')).join('')}</div>
+        <div class="tag-input"><input type="text" id="allergies-input" placeholder="e.g. nuts, dairy, shellfish" onkeydown="if(event.key==='Enter')addTag('allergies')"><button class="btn-add" onclick="addTag('allergies')">Add</button></div>
+      </div>
+      <button class="btn-save" onclick="setScreen('home')">Save &amp; go back</button>
+      <button class="btn-ghost" onclick="clearApiKey()">&#128273; Change Groq API key</button>`;
+  }
+
+  else if (state.screen === 'history') {
+    const items = state.history.length === 0
+      ? `<p class="text-muted">No meals logged yet. Rate a recipe after cooking and it appears here.</p>`
+      : state.history.map(e=>`<div class="history-card"><div class="history-top"><div><div class="history-name">${e.emoji} ${e.name}</div><div class="history-meta">${e.date} &middot; ${e.mealType}</div></div><button class="history-remove" onclick="removeHistory(${e.id})">&#215;</button></div><div class="history-stars">${[1,2,3,4,5].map(n=>`<span style="color:${n<=e.rating?'var(--star-on)':'var(--star-off)'}">&#9733;</span>`).join('')}</div>${e.note?`<div class="history-note">${e.note}</div>`:''}</div>`).join('');
+    screenHTML = `<p class="text-muted">${state.history.length>0?`${state.history.length} meal${state.history.length!==1?'s':''} logged &mdash; your ratings improve future suggestions.`:''}</p>${items}`;
+  }
+
+  else if (state.screen === 'home') {
+    const hasPrefs = p.likes.length>0||p.dislikes.length>0;
+    const recent = state.history.slice(0,3).map(e=>`<div class="recent-meal"><span>${e.emoji} ${e.name}</span><span class="recent-stars">${'&#9733;'.repeat(e.rating)}${'&#9734;'.repeat(5-e.rating)}</span></div>`).join('');
+    screenHTML = `
+      <div class="pills">
+        <span class="pill pill-dark">&#128106; ${p.adults+p.children} people</span>
+        <span class="pill pill-light">&#9201; ${p.cookTime} min</span>
+        ${p.diet!=='none'?`<span class="pill pill-sage">&#129367; ${p.diet}</span>`:''}
+        ${p.allergies.length>0?`<span class="pill pill-allergy">&#9888; ${p.allergies.length} allerg${p.allergies.length>1?'ies':'y'}</span>`:''}
+      </div>
+      ${!hasPrefs?`<div class="tip-box">&#128161; Add your family&rsquo;s likes and dislikes in <strong>&#9881; Prefs</strong> for better suggestions.</div>`:''}
+      <p class="text-muted">Tap below for three ${state.mealType} ideas tailored to your family.</p>
+      <button class="btn-primary" onclick="getSuggestions()">&#10024; Suggest ${state.mealType} ideas</button>
+      ${state.history.length>0?`<div style="margin-top:22px"><p style="font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Recent meals</p>${recent}</div>`:''}`;
+  }
+
+  else if (state.screen === 'suggestions') {
+    if (state.loading) {
+      screenHTML = `<div class="loading-state"><div class="loading-emoji">&#127859;</div><p class="loading-text">Finding the right meals for your family&hellip;</p></div>`;
+    } else {
+      screenHTML = `${state.error?`<div class="error-box">${state.error}</div>`:''}${state.suggestions.map((meal,i)=>renderMealCard(meal,i)).join('')}${state.suggestions.length>0?`<button class="btn-outline" onclick="getSuggestions()">&#128260; Try different suggestions</button><button class="btn-ghost" onclick="setScreen('home')">&larr; Back</button>`:''}`;
+    }
+  }
+
+  app.innerHTML = `<div class="header"><div class="header-top"><div><div class="header-eyebrow">Tonight&rsquo;s kitchen</div><div class="header-title">What shall we eat?</div></div><div class="header-btns">${histBtn}${prefBtn}</div></div>${tabs}</div><div class="content">${screenHTML}</div>`;
+}
+
+// ── Handlers ──────────────────────────────────────────────────────────
+function setScreen(s) { state.screen = s; render(); }
+function setMealType(t) { state.mealType = t; render(); }
+function handleApiKeySave() {
+  const val = document.getElementById('apiKeyInput')?.value?.trim();
+  if (!val) return;
+  state.apiKey = val; saveApiKey(val); state.screen = 'home'; render();
+}
+function clearApiKey() { localStorage.removeItem(API_KEY_KEY); state.apiKey = ''; state.screen = 'setup'; render(); }
+function adjustNum(key, delta) {
+  const limits = { adults:[1,10], children:[0,10], cookTime:[10,120] };
+  const [mn,mx] = limits[key];
+  state.prefs[key] = Math.min(mx, Math.max(mn, state.prefs[key]+delta));
+  savePrefs(); render();
+}
+function setDiet(d) { state.prefs.diet = d; savePrefs(); render(); }
+function addTag(listKey) {
+  const input = document.getElementById(`${listKey}-input`);
+  if (!input) return;
+  const val = input.value.trim();
+  if (val && !state.prefs[listKey].includes(val)) { state.prefs[listKey] = [...state.prefs[listKey], val]; savePrefs(); render(); }
+}
+function removeTag(listKey, val) { state.prefs[listKey] = state.prefs[listKey].filter(x=>x!==val); savePrefs(); render(); }
+function removeHistory(id) { state.history = state.history.filter(x=>x.id!==id); saveHistory(); render(); }
+
+// ── Boot ──────────────────────────────────────────────────────────────
+try { loadState(); render(); } catch(e) { document.getElementById("app").innerHTML = "<div style=\"padding:30px;font-family:sans-serif;color:#8B2E2E;background:#FAE8E8;margin:20px;border-radius:12px\"><strong>Error: </strong>" + e.message + "</div>"; }
+</script>
+</body>
+</html>
